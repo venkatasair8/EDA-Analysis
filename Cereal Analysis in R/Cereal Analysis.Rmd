@@ -1,0 +1,279 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+cereals_data <- read.csv("C:/Users/rvssu/Downloads/Project2/80-cereals/cereal.csv")
+View(cereals_data)
+```
+
+
+```{r}
+cereals_data[!complete.cases(cereals_data),]
+```
+
+
+```{r}
+head(cereals_data)
+```
+
+```{r}
+colnames(cereals_data) <- c("Name", "Manufacturer", "Type", "Calories", "Protein", "Fat", "Sodium", "Fibre", "Carbohydrates", "Sugar", "Potassium", "Vitamins", "Shelf", "Weight", "Cups", "Rating")
+
+cereals_data$Manufacturer_Name <- cereals_data$Manufacturer
+cereals_data$Type <- gsub("H", "Hot", x = cereals_data$Type)
+cereals_data$Type <- gsub("C", "Cold", x = cereals_data$Type)
+cereals_data$Manufacturer_Name <- gsub(pattern = "P", replacement = "Post", x = cereals_data$Manufacturer_Name)
+cereals_data$Manufacturer_Name <- gsub(pattern = "A", replacement = "American Home Food Products", x = cereals_data$Manufacturer_Name)
+cereals_data$Manufacturer_Name <- gsub(pattern = "G", replacement = "General Mills", x = cereals_data$Manufacturer_Name)
+cereals_data$Manufacturer_Name <- gsub(pattern = "K", replacement = "Kellogs", x = cereals_data$Manufacturer_Name)
+cereals_data$Manufacturer_Name <- gsub(pattern = "N", replacement = "Nabisco", x = cereals_data$Manufacturer_Name)
+cereals_data$Manufacturer_Name <- gsub(pattern = "Q", replacement = "Quaker Oats", x = cereals_data$Manufacturer_Name)
+cereals_data$Manufacturer_Name <- gsub(pattern = "R", replacement = "Ralston Purina", x = cereals_data$Manufacturer_Name)
+```
+
+```{r}
+cereal = cereals_data
+```
+
+```{r}
+View(cereal)
+```
+
+```{r}
+# Change cereal type and shelf from character to factor
+cereal$Type <- as.factor(cereal$Type)
+cereal$Shelfs <- as.factor(as.character(cereal$Shelf, levels = c("1","2","3"),labels("1","2","3")))
+cereal$Manufacturer <- as.factor(cereal$Manufacturer_Name)
+```
+
+
+```{r}
+library(dplyr)
+
+cereal <- cereal %>% mutate(AverageGroup = case_when(Rating <= 35 ~ '3',
+                                             Rating > 35  & Rating <= 54 ~ '2',
+                                             Rating > 54 ~ '1'))
+```
+```{r}
+cereal$AverageGroup <- as.factor(as.character(cereal$AverageGroup, levels = c("1","2","3"),labels("1","2","3")))
+```
+
+# summary
+
+```{r}
+conti = subset(cereal, select = -c(Name, Manufacturer_Name,Manufacturer,Shelf, Shelfs,Type,AverageGroup))
+
+summary(conti)
+```
+
+```{r}
+cate = subset(cereal, select = c(Type,Shelfs,Manufacturer,AverageGroup))
+summary(cate)
+```
+
+
+# regression
+
+```{r}
+mod1 <- lm(Rating ~ Fibre + Sugar + Calories + Sodium,data = cereal)
+#mod1 <- lm(rating ~ mfr + type + sugars + fiber + calories,data = cereals_data)
+
+summary(mod1)
+```
+
+Each of the variables is assumed,and there is 0.9 for R-squared,which can be use to predict some scores for other cereals.
+
+let us check distribution for target variable ratings,
+
+# ratings
+
+```{r}
+hist(cereal$Rating,col="#3090C7", main = "Distribution of Cereal Ratings", xlab = "Cereal Rating") 
+```
+
+# Correlation
+
+```{r}
+library(corrplot)
+corDat <- subset(cereal, select = -c(Manufacturer_Name,Type,Name,Manufacturer,Cups,Weight,Shelfs,AverageGroup))
+corrplot(cor(corDat), method= "circle")
+```
+
+
+```{r}
+library(ggcorrplot)
+ggcorrplot(cor(corDat), hc.order = TRUE, 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 3, 
+           method="square", 
+           colors = c("blue", "white", "green"), 
+           title="Correlation", 
+           ggtheme=theme_classic)
+```
+
+Sugars has been negatively correlated rating.
+
+
+Let’s see if sugar, negatively correlated with rating, has also an influence on the shelving.
+
+# ecdf
+
+```{r}
+
+```
+
+```{r}
+#"Name", "Manufacturer", "Type", "Calories", "Protein", "Fat", "Sodium", "Fibre", "Carbohydrates", "Sugar", "Potassium", "Vitamins", "Shelf", "Weight", "Cups", "Rating"
+```
+
+```{r}
+bp1 <- subset(cereal, select = Sugar, subset = AverageGroup == "1", drop = T)
+bp2 <- subset(cereal, select = Sugar, subset = AverageGroup == "2", drop = T)
+bp3 <- subset(cereal, select = Sugar, subset = AverageGroup == "3", drop = T)
+```
+
+
+```{r}
+plot.ecdf(bp1, xlab = "Sugar content")
+plot.ecdf(bp2, col = "blue",pch = 2, add = TRUE)
+plot.ecdf(bp3, col = "red",pch = 5, add = TRUE)
+legend(-0.3, 1, legend = c("Rating Group 1", "Rating Group 2", "Rating Group 3"), col = c("black", "blue", "Red"), pch = c(19, 2,5))
+#abline(v = 250, lty = 0.6)
+```
+
+We can see shelf 2 contains more sugars
+
+Performing boxplot to understand average ratings of shelf
+
+```{r}
+# cereal$avggrp = if(cereal$Rating <= 35)   '3'
+# cereal$avggrp = (cereal$Rating>35 & cereal$Rating<=54 <- 2
+# cereal$avggrp = (cereal$Rating>54 & data$Rating<=29) <- 1
+```
+
+
+# Boxplot
+
+```{r}
+boxplot(Sugar~AverageGroup,data = cereal, main="Box plot to understand the Sugar content of Rating group",col = c("green", "red","yellow"))
+```
+
+The second row of cereal on the shelf had lower scores showing that customers are not interested in sugars.
+
+manufacturer vs rating
+
+```{r}
+library(ggplot2)
+ggplot(cereal, aes(Manufacturer,fill = AverageGroup),ggtheme=theme_classic)+
+  geom_bar(position = 'dodge')+
+  theme_bw()+
+  theme(axis.text.y = element_text(angle = 30, hjust = 0.75))+
+  coord_flip()+
+    scale_y_continuous(breaks=c(2,4,6,8,10,12,14))
+#ggplot(data=cereal,aes(Manufacturer_Name,y = ..Count..))
+#geom_col(aes(group = Shelfs),stat_identity(position = "dodge"))
+```
+
+Let us concentrate on count values.
+
+Most of manufacturers have placed more number of cereals on 3rd shelf. General Mills = 9, Kellogs = 12, Post = 6 and Quaker = 4.
+
+Exception is Nabisco - it has done opposite - More on shelf 1 and least on shelf 3.
+
+The neutral one is Ralston - 4 on shelf 1 and 4 on shelf 3.
+
+# QQ plot Normality
+
+On performing normality on all the variables, Sodium seems to fit the normality graph,
+
+```{r}
+a = cereal$Sodium
+qqnorm(a)
+qqline(a)
+```
+
+
+```{r}
+mean(a)
+sd(a)
+```
+
+```{r}
+x <-(a-159.6753)/83.8323 
+ plot.ecdf(x)             # adjust x sample mean and standard deviation 
+curve(pnorm(x), col = "blue", add = TRUE) # impose normal cdf
+```
+
+# K means clustering
+
+```{r}
+kmeans_data = corDat
+kmeans_data <- kmeans_data[complete.cases(kmeans_data), ]
+
+```
+```{r}
+wss <- 0
+for (i in 1:10) {
+  kmeans.output <- kmeans(x = kmeans_data[], centers = i, nstart = 20)
+  wss[i] <- kmeans.output$tot.withinss
+}
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+data.frame(Clusters = 1:10, WSS = wss) %>% 
+  ggplot(aes(x = Clusters, y = WSS)) +
+  geom_point() +
+  geom_line() +
+  scale_x_continuous(name = "Number of Clusters", breaks = 1:10, minor_breaks = NULL) +
+  scale_y_continuous(name = "Within Groups Sum of Squares") +
+  theme_minimal() #+
+  #labs(title = "Scree Plot")
+```
+
+
+```{r}
+kmeans.output <- kmeans(x = kmeans_data, centers =3 , nstart = 20)
+
+kmeans.output
+```
+
+
+```{r}
+dune_dist <- dist(corDat)
+cmd <- cmdscale(dune_dist)
+```
+
+```{r}
+library(vegan3d)
+groups <- levels(factor(kmeans.output$cluster))
+ordiplot(cmd, type = "n")
+cols <- c("steelblue", "red", "green", "orange")
+for(i in seq_along(groups)){
+  points(cmd[factor(kmeans.output$cluster) == groups[i], ], col = cols[i], pch = 16)
+}
+ordispider(cmd, factor(kmeans.output$cluster), label = TRUE)
+ordihull(cmd, factor(kmeans.output$cluster), lty = "dotted")
+
+```
+
+```{r}
+dd <- cbind(cereal, cluster = kmeans.output$cluster)
+```
+
+```{r}
+dd$Cluster = as.factor(dd$cluster)
+```
+
+# manufacturer vs cluster
+```{r}
+library(ggplot2)
+ggplot(dd, aes(Cluster,fill = Manufacturer))+
+  geom_bar(position = 'dodge')+
+  theme_minimal()
+```
