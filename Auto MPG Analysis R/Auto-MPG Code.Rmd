@@ -1,0 +1,380 @@
+ ---
+title: "proj"
+author: "Suneeth Ravilla"
+date: "06/12/2019"
+output:
+  word_document: default
+  html_document: default
+---
+```{r}
+library(LearnEDAfunctions)
+auto.mpg <- read.csv("D:/AAA/Umer/auto-mpg.csv")
+
+data = auto.mpg
+view(data)
+```
+
+```{r}
+data$horsepower[is.na(data$horsepower)] = 104 
+```
+outliers
+
+```{r}
+library(tidyverse)
+disp.five = fivenum(pull(data,displacement))
+disp.five
+acc.five = fivenum(pull(data,acceleration))
+acc.five
+hrs.five = fivenum(pull(data,horsepower))
+hrs.five
+wg.five = fivenum(pull(data,weight))
+wg.five
+```
+
+```{r}
+var(data$acceleration)
+var(data$displacement)
+var(data$horsepower)
+var(data$weight)
+```
+
+```{r}
+disp.step = 1.5 * (262-104)
+acc.step = 1.5 * (17.2-13.8)
+hrs.step = 1.5 * (125-76)
+wg.step = 1.5 * (3609-2223)
+disp.step
+acc.step
+hrs.step
+wg.step
+```
+
+```{r}
+disp.lower = 104 - disp.step
+disp.upper = 262 + disp.step
+acc.lower = 13.8 - acc.step
+acc.upper = 17.2 +  acc.step
+hrs.lower = 76 - hrs.step
+hrs.upper = 125 + hrs.step
+wg.lower = 2223 - wg.step
+wg.upper = 3609 +  wg.step
+disp.upper
+disp.lower
+acc.lower
+acc.upper
+hrs.upper
+hrs.lower
+wg.lower
+wg.upper
+```
+```{r}
+plot(data$displacement, pch =16, type ="b", ylab = "Displacement")
+abline(h=disp.upper)
+abline(h= disp.lower)
+```
+
+```{r}
+plot(data$acceleration, pch =16, type ="b",ylab = "Acceleration")
+abline(h=acc.upper)
+abline(h= acc.lower)
+```
+
+```{r}
+plot(data$horsepower, pch =16, type ="b", ylab = "Horsepower")
+abline(h=hrs.upper)
+abline(h= hrs.lower)
+```
+
+```{r}
+plot(data$weight, pch =16, type ="b", ylab = "Weight")
+abline(h=wg.upper)
+abline(h= wg.lower)
+```
+
+By looking at the boxplots we can say that there is one outlier in mpg value of 46.6, car name mazda glc manufactured by Japan in 1980
+
+By looking at acceleration there are 6 outliers, 2 in lower bound and 4 in upper bound. 
+
+# Check how the data was read in
+```{r}
+str(data)
+```
+
+
+# Do data conversions to match up with what it is supposed to be
+```{r}
+data$cylinders = as.numeric(data$cylinders)
+data$horsepower = as.numeric(as.character(data$horsepower))
+data$weight = as.numeric(data$weight)
+data$model.year = as.numeric(data$model.year)
+data$origin = as.numeric(data$origin)
+```
+
+
+# Split the car name column into the brand name, Change some of the brand names so that they match and make the brand name a factor
+```{r}
+data$brand_name = sub("([A-Za-z]+).*", "\\1", data$car.name)
+data$brand_name = gsub("chevy", "chevrolet", data$brand_name)
+data$brand_name = gsub("chevroelt", "chevrolet", data$brand_name)
+data$brand_name = gsub("vw", "volkswagen", data$brand_name)
+data$brand_name = gsub("vokswagen", "volkswagen", data$brand_name)
+data$brand_name = gsub("maxda", "mazda", data$brand_name)
+data$brand_name = gsub("toyouta", "toyota", data$brand_name)
+data$brand_name = as.factor(data$brand_name)
+```
+
+# We have 6 missing values in horsepower column
+
+# Impute the mean for the N/A in horsepower
+```{r}
+data$horsepower[is.na(data$horsepower)] = 104 
+```
+```{r}
+mean(data$horsepower)
+```
+
+
+
+# Look at a data summary to get a flavor of the data after plugging the mean for the missings
+```{r}
+summary(data)
+```
+
+
+Stemplots
+
+```{r}
+stem.leaf(pull(data, mpg), m=5, depth=FALSE)
+```
+
+
+```{r}
+stem.leaf(pull(data, acceleration), m=2, depth=FALSE)
+```
+
+```{r}
+ggplot(data,aes(x=factor(origin),y = mpg,fill = origin))+geom_boxplot()+
+xlab("Origin")+ylab("Mpg")+ggtitle("Box plot of Mpg by origin")
+```
+
+```{r}
+ggplot(data,aes(x=factor(cylinders),y=mpg,fill = cylinders))+geom_boxplot()+
+xlab("Number of cylinders")+ylab("Mpg")+ggtitle("Box plot of mpg by number of cylinders")
+```
+
+```{r}
+ggplot(data,aes(x=factor(model.year),y=mpg,fill = model.year))+geom_boxplot()+
+xlab("Model Year")+ylab("Mpg")+ggtitle("Box plot of mpg by model year")+coord_flip()
+```
+
+I am not sure what the corresponding actual names for the places of origin are but it seems like cars that came from region 3 had the best mpg with region 1 having the worst of the three regions
+
+The general trend for the mpg as the number of cylinders increased was down. The more cylinders you had the worse off your mpg was. The best number of cylinders to have seems like 4, 4 cylinders had the best mpg
+
+It seems as if as the years progressed the general mpg values increased too. I am guessing with improved engineering the mpg would have been expected to improve with time.
+
+Histogram
+
+```{r}
+hist(data$cylinders, main = "Histogram of Cylinders",breaks="FD")
+#hist(data$model.year, main = "Histogram of Model_Year", labels = seq(70,83))
+#bins= c(29,57,83,125,152,183,216,244,280,309,338,367,398)
+#hist(data$model.year, xlim =  range(29,57,83,125,152,183,216,244,280,309,338,367,398))
+#axis(side=1, at=seq(69,83, 1), labels=seq(69,83,1))
+ggplot(data, aes(x=data$cylinders),fill = cylinders)+geom_histogram(breaks=seq(2,8, by = 1),col="black",
+                 fill="light blue")+scale_x_continuous(breaks = seq(3,8, 1))+ggtitle("Histogram of Cylinders")+xlab("Cylinders")
+ggplot(data,aes(x=data$model.year))+geom_histogram(breaks=seq(69,82, by = 1) ,
+                  col="black",
+                 fill="light blue",boundary= 70)+ scale_x_continuous(breaks = seq(70, 82, 1))+ggtitle("Histogram of Model_Year")+ xlab("Model_year")
+ggplot(data, aes(x=data$origin),main = "Histogram of Origin",xlab)+geom_histogram(breaks=seq(0,3, by = 1),col="black",
+                 fill="light blue")+scale_x_continuous(breaks = seq(1,3, 1))+ggtitle("Histogram of Origin")+ xlab("Origin")
+hist(data$origin, main = "Histogram of Origin")
+```
+
+```{r}
+par(mfrow = c(2, 2))
+hist(data$acceleration)
+
+hist(data$mpg)
+```
+
+
+We see how Acceleration distribution is close to normal but others such as HorsePower or displacement or Weight or weight are displaced very far to the left skewed, this was to be expected since there will be few cars with a lot of power or with a lot of weight, but most will be located near the initial values.
+
+
+So after the first exploration – our data in a nutshell:
+
+398 different cars from 1970 to 1982
+296 distinct models from 30 manufacturers, a few of them dominating like Ford, Chevrolet.
+Cars mainly from USA (249), much less from Japan (79) and Europe (70)
+1973 and 1978 seem a little bit stronger years with more samples.
+
+```{r}
+hist(data$horsepower, main = "Raw Horse power")
+```
+
+This plot represents 2 leaf stem plot. It looks like Right-Skewed
+
+```{r}
+horsepower.mids = lval(data$horsepower)
+select(horsepower.mids,mids)
+```
+
+Median = 23
+
+roots
+```{r}
+raw.horsepower =(data$horsepower)
+roots.horsepower = sqrt(pull(data,horsepower))
+logs.horsepower = log(pull(data,horsepower))
+recroots.horsepower =-1/sqrt(pull(data,horsepower))
+
+```
+
+hinkley method
+
+```{r}
+par(mfrow = c(2, 2))
+hinkley(raw.horsepower)
+hinkley(roots.horsepower)
+hinkley(logs.horsepower)
+hinkley(recroots.horsepower)
+```
+```{r}
+hinkley(roots.horsepower)
+```
+```{r}
+hinkley(logs.horsepower)
+```
+```{r}
+hinkley(recr.horsepower)
+```
+
+```{r}
+hist(recr.horsepower,main = "Recroots of Horse power")
+```
+
+
+With Hinkley method we can see high postive value with p = 1, negative when p = 0.5. So we would get actual symmetric when we take value between p=0 and p=-1/2. But Logs gives symmetric than all for horsepower data
+
+
+```{r}
+auto<-data[data$horsepower!="?",]
+autompg8<-data.frame(Cylinders=auto$cylinders,
+                     Displacement=as.numeric(auto$displacement),
+                     Horse_power=as.numeric(auto$horsepower),
+                     Weight=as.numeric(auto$weight),
+                     Acceleration=as.numeric(auto$acceleration),
+                     Model_year=auto$model.year,
+                     Origin=auto$origin,
+                     Mpg=as.numeric(auto$mpg))
+autompg8$Displacement= as.integer(autompg8$Displacement)
+library(corrplot)
+dat= subset(autompg8, select = -c(Model_year,Origin,Cylinders))
+M= cor(dat)
+corrplot(M, method =("circle" ))
+corrplot(M, method =("number" ))
+```
+
+
+The highest correlation between mpg and any of the other variables is with weight and it is a negative correlation. This makes sense, the more a car weighs the more energy required to move it down the road and the energy is from the gasoline which means your mpg is going to suffer
+
+The highest correlation among all the variables is between cylinder and displacement with correlation of 95% which shows that displacement of the car is dependent on number of cylinders
+
+scatterplot
+
+```{r}
+ggplot(data,aes(displacement,mpg))+geom_point()+xlab("displacement")+ ylab("mpg")
+```
+
+acceleration variable is not adding considerable strength.
+
+```{r}
+library(ggplot2)
+ggplot(data,aes(weight, mpg))+geom_point()+xlab("weight")+ ylab("mpg")
+```
+
+```{r}
+ggplot(data,aes(acceleration,mpg))+geom_point()+xlab("accleration")+ ylab("mpg")
+```
+```{r}
+ggplot(data,aes(horsepower,mpg))+geom_point()+xlab("horse power")+ ylab("mpg")
+```
+
+```{r}
+library(dplyr)
+originalfit = rline(mpg~cylinders, data)
+dat<- mutate(dat, FIT =pluck(originalfit, "a")+pluck(originalfit, "b")*(data$cylinders-pluck(originalfit, "xC")),RESIDUAL = data$mpg-FIT)
+ggplot(dat, aes(data$cylinders,RESIDUAL,fill=cylinders))+xlab("Cylinders")+geom_bar(stat = "identity",position= 'Dodge')#+geom_hline(yintercept = 0, color = "Blue")
+```
+
+```{r}
+ggplot(data,aes(x =dat$RESIDUAL)) + xlab("RESIDUAL") + geom_histogram(binwidth = 2,position = 'dodge')
+```
+```{r}
+mpg_avg = aggregate( mpg ~ model.year, data, sum)
+mpg_avg
+
+```
+
+
+```{r}
+data = mutate(data, smooth.3R =as.vector(smooth(model.year, kind="3R")))
+ggplot(data,aes(mpg, model.year)) + geom_point() + geom_line(aes(mpg, smooth.3R), color="blue")
+smooth.3RSS = smooth(data$model.year, kind="3RSS")
+data = mutate(data,smooth.3RSS =as.vector(smooth(model.year, kind="3RSS")))
+
+ggplot(data,aes(mpg, model.year)) + geom_point() + geom_line(aes(mpg, smooth.3R), color="blue")+geom_line(aes(mpg, smooth.3RSS), color="green")
+data = mutate(data,smooth.3RSSH = han(as.vector(smooth(model.year,kind="3RSS"))))
+
+ggplot(data, aes(mpg, model.year)) + geom_point() + geom_line(aes(mpg, smooth.3RSSH), color="blue")
+data = mutate(data, Rough = model.year-smooth.3RSSH)
+
+data = mutate(data, smooth.3RS3R.twice =as.vector(smooth(model.year, kind="3RS3R")))
+
+ggplot(data,aes(mpg, model.year))+geom_point()+geom_line(aes(mpg, smooth.3RS3R.twice), col="blue")
+data = mutate(data,FinalRough = model.year-smooth.3RS3R.twice)
+ggplot(data, aes(mpg, FinalRough)) + geom_point() + geom_hline(yintercept = 0, color = "blue")
+
+```
+
+```{r}
+originalfit = rline(mpg~model.year, mpg_avg)
+originalfit
+
+```
+
+
+Resistant line,
+
+mpg = 23.975 + 1.424(year-76)
+```{r}
+ggplot(mpg_avg,aes(model.year, mpg))+geom_point()+ylab("Mpg")
+```
+
+```{r}
+ggplot(mpg_avg,aes(model.year, mpg),breaks=seq(70,82, by = 1))+geom_point()+ylab("Mpg")+geom_abline(slope = 1.424, intercept =-84.249)+scale_x_continuous(breaks = seq(70,82, 1))+xlab("Model Year")
+```
+
+```{r}
+data1 <- mutate(mpg_avg,FIT =pluck(originalfit, "a")+pluck(originalfit, "b")*(model.year- pluck(originalfit, "xC")),RESIDUAL = mpg-FIT)
+ggplot(data1,aes(model.year, RESIDUAL),breaks=seq(70,82, by = 1))+geom_point()+geom_hline(yintercept = 0, color = "Blue")+scale_x_continuous(breaks = seq(70,82, 1))+ggtitle("Residual plot")+xlab("Model Year")
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+read.lengths <- c(data$model.year)
+read.lengths.cat <- as.factor(read.lengths)
+
+read.lengths.data <- data.frame(read.lengths.cat, read.lengths)
+
+read.lengths.data <- aggregate(read.lengths ~ read.lengths.cat, 
+            data = read.lengths.data, sum)
+
+ggplot(aes(x = read.lengths.cat, y = read.lengths), 
+       data = read.lengths.data) + 
+  geom_bar(stat = "identity")
+```
+
